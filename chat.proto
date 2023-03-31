@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto"; 
+package main;
+
+
+message Empty {}
+
+message ClientIdentifier {
+  int32 client_identifier = 1;
+}
+
+message MessageReceived {
+  string response = 1;
+}
+
+message MessageFormat {
+  string first_name = 1;
+  int32 client_identifier = 2;
+  string message_text = 3;
+}
+
+message ClientName {
+  string first_name = 1;
+}
+
+
+service ChatService {
+  rpc SendMessage(MessageFormat) returns (MessageReceived);
+  rpc GetMessage(google.protobuf.Empty) returns (stream MessageFormat);
+  rpc GetClientIdentifier(ClientName) returns (ClientIdentifier);
+}
