@@ -21,6 +21,7 @@ class Client:
         newThread.daemon = True
         newThread.start()
 
+        print("Chat session has started. Enter your message, then press enter.")
         while True:
             messageText = input("") 
             # sending the message to the server
