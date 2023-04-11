@@ -1,6 +1,9 @@
 # CS4459 - Final Project
-## A Distributed Application: Multi-User Chat System 
+## A Distributed Application: Multi-Server Chat System 
 ### Created by: Daniel McGarr and Alex Mihas 
+
+Multi-server and multi-client chat application created with gRPC. Created as a final prject for CS4459 - Selected Topics on Scalable and Robust 
+Distributed Systems at the University of Western Ontario.
 
 Please install tkinter package before running. Install by typing ```pip3 install tk``` into the terminal.
 
