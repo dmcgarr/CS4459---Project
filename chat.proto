@@ -18,15 +18,21 @@ message MessageFormat {
   string first_name = 1;
   int32 client_identifier = 2;
   string message_text = 3;
+  int32 server_port_number = 4;
 }
 
 message ClientName {
   string first_name = 1;
 }
 
+message PortNumber {
+  int32 port_number = 1;
+}
+
 
 service ChatService {
   rpc SendMessage(MessageFormat) returns (MessageReceived);
   rpc GetMessage(google.protobuf.Empty) returns (stream MessageFormat);
+  rpc GetPortNumber(google.protobuf.Empty) returns (PortNumber);
   rpc GetClientIdentifier(ClientName) returns (ClientIdentifier);
 }
