@@ -10,6 +10,8 @@ from tkinter import simpledialog
 from tkinter import messagebox
 from tkinter import ttk
 
+
+
 # this method returns a dictionary of all the servers that are currently running (key = server name, value = port number)
 def getActiveServerSessions():
     servers = {}
@@ -55,6 +57,7 @@ class Client:
         self.connection = None
         self.firstName = name
         self.frame = frame
+        
         root.protocol("WM_DELETE_WINDOW", self.exit)
 
         self.selections_frame = Frame(self.frame)
@@ -99,8 +102,8 @@ class Client:
         self.dropdown.configure(values= self.servernames)
 
     def join(self, selection):
-        portNum = getServerNumber(selection)
-        self.channel = grpc.insecure_channel(f'localhost:{portNum}')
+        serverPortNumber = getServerNumber(selection)
+        self.channel = grpc.insecure_channel(f'localhost:{serverPortNumber}')
 
     def switch(self, event):
         selection = self.dropdown.get()
@@ -115,6 +118,9 @@ class Client:
             self.send_button.configure(state=NORMAL)
             # generating a unique 4 digit client ID (just in case two or more people have the same name)
             self.clientID = self.connection.GetClientIdentifier(chat_pb2.ClientName(first_name = self.firstName)).client_identifier
+
+            self.server_port_number = self.connection.GetPortNumber(chat_pb2.Empty()).port_number
+
             self.chat_screen.delete(1.0, END)
             self.chat_screen.insert(END,f"The server {selection} has given you a client identifier of {self.clientID}\n")
             self.chat_screen.insert(END, "Chat session has started. Enter your message in the text box below, then press enter.\n")
@@ -127,7 +133,7 @@ class Client:
         # sending the message to the server
         message= self.input_field.get()
         self.input_field.delete(0,END)
-        self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = message))
+        self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = message, server_port_number = self.server_port_number))
         self.chat_screen.insert(END, f"{self.firstName}: {message}\n", "left")
 
 
@@ -137,8 +143,7 @@ class Client:
         for message in self.connection.GetMessage(chat_pb2.Empty()):  
             name = message.first_name
             msg = message.message_text
-
-            if message.client_identifier != self.clientID: # this is to avoid printing a message that a client just sent on their own session
+            if message.client_identifier != self.clientID and message.server_port_number == self.server_port_number: # this is to avoid printing a message that a client just sent on their own session
                 self.chat_screen.insert(END, f"{name}: {msg}\n", "right")
     # make this function send a message to the server saying the user left the room
     # and display on screen that the person left, then exit application or for switching rooms

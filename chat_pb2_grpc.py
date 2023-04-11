@@ -25,6 +25,11 @@ class ChatServiceStub(object):
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
                 response_deserializer=chat__pb2.MessageFormat.FromString,
                 )
+        self.GetPortNumber = channel.unary_unary(
+                '/main.ChatService/GetPortNumber',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=chat__pb2.PortNumber.FromString,
+                )
         self.GetClientIdentifier = channel.unary_unary(
                 '/main.ChatService/GetClientIdentifier',
                 request_serializer=chat__pb2.ClientName.SerializeToString,
@@ -42,6 +47,12 @@ class ChatServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GetMessage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetPortNumber(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -65,6 +76,11 @@ def add_ChatServiceServicer_to_server(servicer, server):
                     servicer.GetMessage,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                     response_serializer=chat__pb2.MessageFormat.SerializeToString,
+            ),
+            'GetPortNumber': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPortNumber,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=chat__pb2.PortNumber.SerializeToString,
             ),
             'GetClientIdentifier': grpc.unary_unary_rpc_method_handler(
                     servicer.GetClientIdentifier,
@@ -112,6 +128,23 @@ class ChatService(object):
         return grpc.experimental.unary_stream(request, target, '/main.ChatService/GetMessage',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             chat__pb2.MessageFormat.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetPortNumber(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/main.ChatService/GetPortNumber',
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            chat__pb2.PortNumber.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

@@ -116,6 +116,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         
         return chat_pb2.MessageReceived(response = "ok")
     
+    def GetPortNumber(self, request, context): 
+        return chat_pb2.PortNumber(port_number = serverPortNum)
+    
     def GetMessage(self, request, context): # this method was taken directly from the source code, so it needs to be changed
         lastindex = 0
         # For every client a infinite loop starts (in gRPC's own managed thread)
