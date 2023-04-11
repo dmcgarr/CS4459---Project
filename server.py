@@ -121,15 +121,20 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
     def GetPortNumber(self, request, context): 
         return chat_pb2.PortNumber(port_number = serverPortNum)
     
-    def GetMessage(self, request, context): # this method was taken directly from the source code, so it needs to be changed
-        lastindex = 0
-        # For every client a infinite loop starts (in gRPC's own managed thread)
-        while True:
-            # Check if there are any new messages
-            while len(messages) > lastindex:
-                n = messages[lastindex]
-                lastindex += 1
-                yield n
+    def GetMessage(self, request, context): # this method will broadcast incoming messages to all the clients
+        numMessagesClientReceived = 0 # when the client starts up, they will have not received any messages so far
+        
+        while True: # infinite loop
+            numMessagesSent = len(messages) # the length of messages will be the number of messages sent so far in the chat
+      
+            if numMessagesSent > numMessagesClientReceived: # if more messages have been sent then what the client receivied
+                # if this is true, then we need to send these new messages to all the clients currently in the server
+
+                messageToSend = messages[numMessagesClientReceived] # the first (or only) message that the client has not received
+                numMessagesClientReceived = numMessagesClientReceived + 1 # incrememting
+                yield messageToSend # send this message
+                # the reason why this is a "yield" and not "return", because if a client joins a chat when messages have already been sent, the server needs to be able to
+                # send ALL messages that have not been sent yet, and "yield" allows multiple things to be returned
 
 def server():
     global server
@@ -150,7 +155,9 @@ def start_server():
 
 
 if __name__ == "__main__":
+    # set size of server GUI
     server_tk.geometry("410x360")
+    # hide the GUI when the user inputs port number and 
     server_tk.withdraw()
     serverPortNum = simpledialog.askinteger("Port Number", "Input Port Number For this server:", parent=server_tk)
     serverName = simpledialog.askstring("Port Name", "Input Servers Name:", parent= server_tk)

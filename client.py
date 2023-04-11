@@ -126,6 +126,7 @@ class Client:
             self.chat_screen.insert(END,f"The server {selection} has given you a client identifier of {self.clientID}\n")
             self.chat_screen.insert(END, "Chat session has started. Enter your message in the text box below, then press enter.\n")
 
+            self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = "~ENTERED THE CHATROOM~", server_port_number = self.serverPortNumber))
             self.newThread = threading.Thread(target=self.waitingForIncomingMessages)
             self.newThread.daemon = True
             self.newThread.start()
