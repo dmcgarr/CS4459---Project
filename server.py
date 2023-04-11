@@ -47,7 +47,7 @@ def exit():
                 for line in arr:
                     logFile.write(f"{line}")
             server_tk.destroy()
-            server.stop(None)
+            server.stop(1)
             sys.exit(0)
     
 clients = {}
@@ -110,10 +110,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         id = request.client_identifier
         msg = request.message_text
         server_chat_list.insert(END, f"{name}: {msg}\n")
-        print(clients)
         if (msg == "~LEFT THE CHATROOM~"):
             clients.pop(id)
-            print(clients)
         messages.append(request)
         
         return chat_pb2.MessageReceived(response = "ok")

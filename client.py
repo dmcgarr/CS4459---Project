@@ -57,6 +57,7 @@ class Client:
         self.connection = None
         self.firstName = name
         self.frame = frame
+        self.serverPortNumber = None
         
         root.protocol("WM_DELETE_WINDOW", self.exit)
 
@@ -102,15 +103,15 @@ class Client:
         self.dropdown.configure(values= self.servernames)
 
     def join(self, selection):
-        serverPortNumber = getServerNumber(selection)
-        self.channel = grpc.insecure_channel(f'localhost:{serverPortNumber}')
+        self.serverPortNumber = getServerNumber(selection)
+        self.channel = grpc.insecure_channel(f'localhost:{self.serverPortNumber}')
 
     def switch(self, event):
         selection = self.dropdown.get()
         answer = messagebox.askyesno(title="Change Server Confirmation", message= f"Are you sure you want to join the server {selection}?")
         if answer:
             if self.connection != None:
-                self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = "~LEFT THE CHATROOM~"))
+                self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = "~LEFT THE CHATROOM~", server_port_number = self.serverPortNumber))         
             self.join(selection)
             self.connection = chat_pb2_grpc.ChatServiceStub(self.channel) 
             # error prevetion to enable text input only when server is connected.
@@ -119,7 +120,7 @@ class Client:
             # generating a unique 4 digit client ID (just in case two or more people have the same name)
             self.clientID = self.connection.GetClientIdentifier(chat_pb2.ClientName(first_name = self.firstName)).client_identifier
 
-            self.server_port_number = self.connection.GetPortNumber(chat_pb2.Empty()).port_number
+            self.serverPortNumber = self.connection.GetPortNumber(chat_pb2.Empty()).port_number
 
             self.chat_screen.delete(1.0, END)
             self.chat_screen.insert(END,f"The server {selection} has given you a client identifier of {self.clientID}\n")
@@ -133,7 +134,7 @@ class Client:
         # sending the message to the server
         message= self.input_field.get()
         self.input_field.delete(0,END)
-        self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = message, server_port_number = self.server_port_number))
+        self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = message, server_port_number = self.serverPortNumber))
         self.chat_screen.insert(END, f"{self.firstName}: {message}\n", "left")
 
 
@@ -143,19 +144,19 @@ class Client:
         for message in self.connection.GetMessage(chat_pb2.Empty()):  
             name = message.first_name
             msg = message.message_text
-            if message.client_identifier != self.clientID and message.server_port_number == self.server_port_number: # this is to avoid printing a message that a client just sent on their own session
+            if message.client_identifier != self.clientID and message.server_port_number == self.serverPortNumber: # this is to avoid printing a message that a client just sent on their own session
                 self.chat_screen.insert(END, f"{name}: {msg}\n", "right")
     # make this function send a message to the server saying the user left the room
     # and display on screen that the person left, then exit application or for switching rooms
     def exit(self): 
         answer = messagebox.askyesno(title="Exit Confirmation", message= "Are you sure you want to exit the chat room?")
         if answer:
-            if self.connection == None:
+            if self.connection == None or self.serverPortNumber == None:
                 root.destroy()
                 sys.exit(0)
             else:
                 self.chat_screen.insert(END, "Exiting Room\n")
-                self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = "~LEFT THE CHATROOM~"))
+                self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = "~LEFT THE CHATROOM~", server_port_number = self.serverPortNumber))
                 root.destroy()
                 sys.exit(0)
 
