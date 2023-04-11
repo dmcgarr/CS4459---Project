@@ -107,7 +107,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         name = request.first_name
         id = request.client_identifier
         msg = request.message_text
-
         server_chat_list.insert(END, f"{name}: {msg}\n")
         if (msg == "~LEFT THE CHATROOM~\n"):
             clients.pop(id)

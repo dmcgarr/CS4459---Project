@@ -71,7 +71,7 @@ class Client:
         self.chat_screen.pack(side="top")
         self.username_label = Label(self.frame, text=self.firstName)
         self.username_label.pack(side="left")
-        self.input_field = Entry(self.frame, bd=5, width=10)
+        self.input_field = Entry(self.frame, bd=5, width=10, state=DISABLED)
         self.input_field.bind('<Return>', self.send_message)
         self.input_field.focus()
         self.input_field.pack(side="left")
@@ -95,9 +95,11 @@ class Client:
         self.join(selection)
         answer = messagebox.askyesno(title="Change Server Confirmation", message= f"Are you sure you want to join the server {selection}\"?")
         if answer:
-
+            if self.connection != None:
+                self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = "~LEFT THE CHATROOM~"))
             self.connection = chat_pb2_grpc.ChatServiceStub(self.channel) 
-        
+            # error prevetion to enable text input only when server is connected.
+            self.input_field.configure(state=NORMAL)
             # generating a unique 4 digit client ID (just in case two or more people have the same name)
             self.clientID = self.connection.GetClientIdentifier(chat_pb2.ClientName(first_name = self.firstName)).client_identifier
             self.chat_screen.delete(1.0, END)
@@ -113,7 +115,7 @@ class Client:
         message= self.input_field.get()
         self.input_field.delete(0,END)
         self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = message))
-        self.chat_screen.insert(END, f"{self.firstName}:\n{message}\n", "left")
+        self.chat_screen.insert(END, f"{self.firstName}: {message}\n", "left")
 
 
     
@@ -124,7 +126,7 @@ class Client:
             msg = message.message_text
 
             if message.client_identifier != self.clientID: # this is to avoid printing a message that a client just sent on their own session
-                self.chat_screen.insert(END, f"{name}:\n{msg}\n", "right")
+                self.chat_screen.insert(END, f"{name}: {msg}\n", "right")
     # make this function send a message to the server saying the user left the room
     # and display on screen that the person left, then exit application or for switching rooms
     def exit(self): 
@@ -142,11 +144,11 @@ class Client:
 
 if __name__ == "__main__":
     root = Tk()
+    root.title("GRPC Chat")
     main_frame = Frame(root, width = 300, height = 300)
     main_frame.pack()
     root.withdraw() #hide main frame while taking input
     name = simpledialog.askstring("Registration", "Please enter your name:", parent=root)
     root.deiconify() # make main frame visible after taking input
-    main_frame.title = ("GRPC Chat")
     
     c = Client(name, main_frame)
