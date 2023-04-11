@@ -7,6 +7,7 @@ import chat_pb2
 
 import sys
 import threading
+import os
 
 from tkinter import *
 from tkinter import simpledialog
@@ -48,7 +49,8 @@ def exit():
                     logFile.write(f"{line}")
             server_tk.destroy()
             server.stop(1)
-            sys.exit(0)
+            newThread.join()
+            os._exit(0)
     
 clients = {}
 messages = [] # all the messages will be stored in here
