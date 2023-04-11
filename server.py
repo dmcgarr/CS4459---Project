@@ -19,6 +19,9 @@ server_started = False
 server_tk = Tk()
 server = None
 
+# Function that is called when X/close button is pressed or the end server
+# button is pressed. it will remove itself from the list of servers.
+# If the server has not been started it will exit normally
 def exit():
     answer = messagebox.askyesno(title="Exit Confirmation", message= "Are you sure you want to shut down the server?")
     if answer:
@@ -57,7 +60,9 @@ messages = [] # all the messages will be stored in here
 
 
 
-
+# This function appends the server's port and name to a file for storage.
+# If the server name or port number was not inputted it will print an error
+# message and exit the program
 def setup():
     if serverName == None or serverPortNum == None:
         print("Error: Either server name or port number was left empty")
@@ -92,9 +97,12 @@ def setup():
         logFile.write(f"{serverPortNum}_{serverName}\n")
 
 
-
-
+# Main server class that will send and receive messages send from clients that
+# are currently in the server.
 class ChatService(chat_pb2_grpc.ChatServiceServicer):
+    
+    # this function will receive the join message from the client and assign
+    # it a unique identifier and return it to the client
     def GetClientIdentifier(self, request, context):
         firstName = request.first_name
         clientNumber = random.randint(1000,9999) # generate a random 4 digit number for the client id
@@ -107,6 +115,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
 
         return chat_pb2.ClientIdentifier(client_identifier = clientNumber)
     
+    # This function will receive a chat message from a client and append it to
+    # the messages array. The Get messages function will send it in a separate
+    # thread. It will send the client a response to indicate it received the 
+    # message but will distribute it later.
     def SendMessage(self, request, context): 
         name = request.first_name
         id = request.client_identifier
@@ -118,6 +130,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         
         return chat_pb2.MessageReceived(response = "ok")
     
+    # Handles the request from the client to get the servers port number.
+    # This function returns its port number to the client
     def GetPortNumber(self, request, context): 
         return chat_pb2.PortNumber(port_number = serverPortNum)
     
@@ -136,6 +150,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 # the reason why this is a "yield" and not "return", because if a client joins a chat when messages have already been sent, the server needs to be able to
                 # send ALL messages that have not been sent yet, and "yield" allows multiple things to be returned
 
+# function that will start the GRPC server.
 def server():
     global server
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
@@ -145,33 +160,45 @@ def server():
     server.start()
     server.wait_for_termination()
 
+# since the GUI is threaded the start server function will need to be threaded
+# as well to run concurrently.
 newThread= threading.Thread(target=server, daemon=True)
 
+# This function is called when the start server button is pressed. It will call
+# the function setup and start the server thread. It will also disable the 
+# start server button from being pressed and enable the stop server button
 def start_server():
     start_button.configure(state=DISABLED)
     end_button.configure(state=NORMAL)
     setup()
     newThread.start()
 
-
+# main loop to setup the servers GUI.
+# it will ask the user for the port number and server's name to begin running the server
 if __name__ == "__main__":
     # set size of server GUI
     server_tk.geometry("410x360")
     # hide the GUI when the user inputs port number and 
     server_tk.withdraw()
+    # ask for user inputs
     serverPortNum = simpledialog.askinteger("Port Number", "Input a port number for this server:", parent=server_tk)
     serverName = simpledialog.askstring("Port Name", "Input the server's name:", parent= server_tk)
     server_tk.title(f'Chatroom Server {serverName}')
+    # the GUI appears after the inputs have been made
     server_tk.deiconify()
+    # sets functionality of the X/close button to run the function exit when pressed
     server_tk.protocol("WM_DELETE_WINDOW", exit)
+    # Main frame to add to
     frame = Frame (server_tk, width=300, height=300)
     frame.pack()
-    start_button = Button(frame, text="START", command=start_server)
+    # add start button
+    start_button = Button(frame, text="START SERVER", command=start_server)
     start_button.pack(side= "left")
-
-    end_button = Button(frame, text="END", command=exit, state=DISABLED)
+    # add end button
+    end_button = Button(frame, text="STOP SERVER", command=exit, state=DISABLED)
     end_button.pack(side="right")
-
+    # create text field to display incoming messages
     server_chat_list = Text()
     server_chat_list.pack(side="bottom")
+    # start GUI thread
     server_tk.mainloop()
