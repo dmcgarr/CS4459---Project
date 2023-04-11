@@ -73,7 +73,8 @@ class Client:
         # Frame for the exit button to keep it away from other functions of the GUI
         self.exit_frame = Frame(self.frame)
         # Label for Server Dropdown list
-        self.server_label = Label(self.selections_frame, text="Sever List").pack(side="left")
+        self.space = Label(self.selections_frame, text="").pack()
+        self.server_label = Label(self.selections_frame, text="Server List").pack(side="left")
         # Get Dropdown list
         self.options=list(getActiveServerSessions().keys())
         # Create dropdown and add to frame. When the dropdown is selected the 
@@ -82,6 +83,7 @@ class Client:
         self.dropdown.bind("<<ComboboxSelected>>", self.switch)
         self.dropdown.configure(postcommand=self.get_updated_server_list)
         self.dropdown.pack(side="left")
+        self.space = Label(self.selections_frame, text="").pack()
         # Set up of chat box where messages are displayed
         self.chat_screen = Text(self.frame)
         self.chat_screen.tag_configure("left", justify=LEFT)
@@ -97,16 +99,18 @@ class Client:
         self.send_button = Button(self.chatbox_frame, text="SEND", command=lambda:None, state=DISABLED)
         self.send_button.bind("<ButtonRelease-1>", self.send_message)
         self.send_button.pack(side="left")
+        # Add exit button
+        self.space = Label(self.exit_frame, text="").pack()
         self.exit_button = Button(self.exit_frame, text= "EXIT CHATROOM", command=self.exit, bg="red")
-        self.exit_button.pack(side="bottom")
-
+        self.exit_button.pack()
+        self.space = Label(self.exit_frame, text="").pack()
         self.chat_screen.insert(END, f"Welcome {self.firstName}!\n")
 
         self.chat_screen.insert(END, "Chat application has started. Please select a server from the dropdown menu.\n")
         # add elements to GUI and start GUI loop
         self.selections_frame.pack(side="top")
         self.chatbox_frame.pack(side="top")
-        self.exit_frame.pack(side="right")
+        self.exit_frame.pack()
         self.frame.mainloop()
     
     # function returns nothing and it will give the class a list of active 
@@ -160,7 +164,7 @@ class Client:
         message= self.input_field.get()
         self.input_field.delete(0,END)
         self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = message, server_port_number = self.serverPortNumber))
-        self.chat_screen.insert(END, f"{self.firstName}: {message}\n", "left")
+        self.chat_screen.insert(END, f"{self.firstName}: {message}\n", "right")
 
 
     # wait for incoming messages from the server sent by other users
@@ -170,7 +174,7 @@ class Client:
             name = message.first_name
             msg = message.message_text
             if message.client_identifier != self.clientID and message.server_port_number == self.serverPortNumber: # this is to avoid printing a message that a client just sent on their own session
-                self.chat_screen.insert(END, f"{name}: {msg}\n", "right")
+                self.chat_screen.insert(END, f"{name}: {msg}\n", "left")
     
     # called when either the exit chatroom button is selected or the X button 
     # is pressed. It will send a message to other clients that the user has

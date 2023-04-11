@@ -159,8 +159,8 @@ if __name__ == "__main__":
     server_tk.geometry("410x360")
     # hide the GUI when the user inputs port number and 
     server_tk.withdraw()
-    serverPortNum = simpledialog.askinteger("Port Number", "Input Port Number For this server:", parent=server_tk)
-    serverName = simpledialog.askstring("Port Name", "Input Servers Name:", parent= server_tk)
+    serverPortNum = simpledialog.askinteger("Port Number", "Input a port number for this server:", parent=server_tk)
+    serverName = simpledialog.askstring("Port Name", "Input the server's name:", parent= server_tk)
     server_tk.title(f'Chatroom Server {serverName}')
     server_tk.deiconify()
     server_tk.protocol("WM_DELETE_WINDOW", exit)
