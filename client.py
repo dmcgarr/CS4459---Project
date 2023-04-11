@@ -1,12 +1,14 @@
 import grpc
 import chat_pb2_grpc
 import chat_pb2
-import threading
-import argparse
 
-parser = argparse.ArgumentParser(description="client arguments") 
-parser.add_argument('firstName', help = "firstName of client")
-args = parser.parse_args()
+import threading
+import sys
+
+from tkinter import *
+from tkinter import simpledialog
+from tkinter import messagebox
+from tkinter import ttk
 
 # this method returns a dictionary of all the servers that are currently running (key = server name, value = port number)
 def getActiveServerSessions():
@@ -34,96 +36,86 @@ def getActiveServerSessions():
 # this method returns True if the server name provided exists
 def check (serverName):
     runningServers = getActiveServerSessions()
-
-    for key in runningServers:
-        if serverName == key:
-            return True
-   
-    return False
+    return serverName in runningServers
 
 # this method returns a port number for a given server name
 def getServerNumber (serverName):
     runningServers = getActiveServerSessions()
 
-    if serverName in runningServers:
+    if check(serverName):
         return runningServers[serverName]
     else:
         return -1   # note that this method is always called after we perform the previous check method 
                     # so theoretically, this return statement never be reached as we will always verify whether the server name exists
                     # but for proper error handling and testing, it is good to include this
 
-# this method joins a server
-# it's called when we start a client session OR if the client decides to switch chat sessions
-def join():
-
-    joined = False 
-
-    while joined == False:
-        runningServers = getActiveServerSessions()
-
-        print("The following chatrooms are open:")
-
-        for key in runningServers:
-            print(f"    - {key}")
-           
-        serverName = input("\nPlease type the name of the chatroom you wish to enter: ")
-
-        if check(serverName): # if the user provided input corresponds to a running server
-            joined = True
-            serverPortNumber = getServerNumber(serverName)
-        else: 
-            print("\nThe chatroom name you have entered does not exist.\n") # we go back to the beginning of the while loop and start over
-
-    # establishing a connection to the GRPC server
-    channel = grpc.insecure_channel(f'localhost:{serverPortNumber}')
-
-    return channel
-
-
-
 class Client:
-    def __init__(self):
-
-        self.firstName = args.firstName
-
-        print(f"\nWelcome {self.firstName}!\n")
-
-        channel = join()
-
-        self.connection = chat_pb2_grpc.ChatServiceStub(channel) 
+    def __init__(self, name, frame):
         
-        # generating a unique 4 digit client ID (just in case two or more people have the same name)
-        self.clientID = self.connection.GetClientIdentifier(chat_pb2.ClientName(first_name = self.firstName)).client_identifier
+        self.connection = None
+        self.firstName = name
+        self.frame = frame
+        root.protocol("WM_DELETE_WINDOW", self.exit)
+        self.exit_button = Button(self.frame, text= "EXIT CHATROOM", command=self.exit)
+        self.exit_button.pack()
 
-        print("The server has given you a client identifier of", self.clientID)
-
-        newThread = threading.Thread(target=self.waitingForIncomingMessages)
-        newThread.daemon = True
-        newThread.start()
-
-        print("Chat session has started. Enter your message, then press enter.")
-
-        while True:
-            messageText = input("") 
-
-            if messageText == "switch":
-                channel = join()
-
-                self.connection = chat_pb2_grpc.ChatServiceStub(channel) 
+        self.options=list(getActiveServerSessions().keys())
         
-                # generating a unique 4 digit client ID (just in case two or more people have the same name)
-                self.clientID = self.connection.GetClientIdentifier(chat_pb2.ClientName(first_name = self.firstName)).client_identifier
+        self.dropdown = ttk.Combobox(value=self.options)
+        self.dropdown.bind("<<ComboboxSelected>>", self.switch)
+        self.dropdown.configure(postcommand=self.get_updated_server_list)
+        self.dropdown.pack()
+        self.chat_screen = Text(self.frame)
+        self.chat_screen.tag_configure("left", justify=LEFT)
+        self.chat_screen.tag_configure("right", justify=RIGHT)
+        self.chat_screen.pack(side="top")
+        self.username_label = Label(self.frame, text=self.firstName)
+        self.username_label.pack(side="left")
+        self.input_field = Entry(self.frame, bd=5, width=10)
+        self.input_field.bind('<Return>', self.send_message)
+        self.input_field.focus()
+        self.input_field.pack(side="left")
+        # move this into client setup
 
-                print("The server has given you a client identifier of", self.clientID)
+        self.chat_screen.insert(END, f"Welcome {self.firstName}!\n")
 
-                newThread = threading.Thread(target=self.waitingForIncomingMessages)
-                newThread.daemon = True
-                newThread.start()
+        self.chat_screen.insert(END, "Chat application has started. Please select a server from the dropdown menu.\n")
+        main_frame.mainloop()
+    
+    def get_updated_server_list(self):
+        self.servernames = list(getActiveServerSessions().keys())
+        self.dropdown.configure(values= self.servernames)
 
-            else:
-                # sending the message to the server
-                self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = messageText))  
-            
+    def join(self, selection):
+        portNum = getServerNumber(selection)
+        self.channel = grpc.insecure_channel(f'localhost:{portNum}')
+
+    def switch(self, event):
+        selection = self.dropdown.get()
+        self.join(selection)
+        answer = messagebox.askyesno(title="Change Server Confirmation", message= f"Are you sure you want to join the server {selection}\"?")
+        if answer:
+
+            self.connection = chat_pb2_grpc.ChatServiceStub(self.channel) 
+        
+            # generating a unique 4 digit client ID (just in case two or more people have the same name)
+            self.clientID = self.connection.GetClientIdentifier(chat_pb2.ClientName(first_name = self.firstName)).client_identifier
+            self.chat_screen.delete(1.0, END)
+            self.chat_screen.insert(END,f"The server {selection} has given you a client identifier of {self.clientID}\n")
+            self.chat_screen.insert(END, "Chat session has started. Enter your message in the text box below, then press enter.\n")
+
+            self.newThread = threading.Thread(target=self.waitingForIncomingMessages)
+            self.newThread.daemon = True
+            self.newThread.start()
+
+    def send_message(self, event):
+        # sending the message to the server
+        message= self.input_field.get()
+        self.input_field.delete(0,END)
+        self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = message))
+        self.chat_screen.insert(END, f"{self.firstName}:\n{message}\n", "left")
+
+
     
     def waitingForIncomingMessages(self):
 
@@ -132,6 +124,29 @@ class Client:
             msg = message.message_text
 
             if message.client_identifier != self.clientID: # this is to avoid printing a message that a client just sent on their own session
-                print(f"{name}: {msg}")
+                self.chat_screen.insert(END, f"{name}:\n{msg}\n", "right")
+    # make this function send a message to the server saying the user left the room
+    # and display on screen that the person left, then exit application or for switching rooms
+    def exit(self): 
+        answer = messagebox.askyesno(title="Exit Confirmation", message= "Are you sure you want to exit the chat room?")
+        if answer:
+            if self.connection == None:
+                root.destroy()
+                sys.exit(0)
+            else:
+                self.chat_screen.insert(END, "Exiting Room\n")
+                self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = "~LEFT THE CHATROOM~"))
+                root.destroy()
+                sys.exit(0)
 
-c = Client()
+
+if __name__ == "__main__":
+    root = Tk()
+    main_frame = Frame(root, width = 300, height = 300)
+    main_frame.pack()
+    root.withdraw() #hide main frame while taking input
+    name = simpledialog.askstring("Registration", "Please enter your name:", parent=root)
+    root.deiconify() # make main frame visible after taking input
+    main_frame.title = ("GRPC Chat")
+    
+    c = Client(name, main_frame)

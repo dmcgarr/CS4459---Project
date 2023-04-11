@@ -1,82 +1,92 @@
 from concurrent import futures
 import random
-import argparse
 
 import grpc
 import chat_pb2_grpc
 import chat_pb2
 
-import signal
 import sys
+import threading
 
-parser = argparse.ArgumentParser(description="server arguments") 
-parser.add_argument('portNum', help = "port number to bind server to")
-parser.add_argument('serverName', help = "name for clients to recognize the server as")
-args = parser.parse_args()
+from tkinter import *
+from tkinter import simpledialog
+from tkinter import messagebox
 
-serverPortNum = args.portNum
-serverName = args.serverName
+serverPortNum = ""
+serverName = ""
+server_started = False
+server_tk = Tk()
 
-def sigint_handler(signal, frame):
-    print("\nThe server is shutting down.")
+def exit():
+    answer = messagebox.askyesno(title="Exit Confirmation", message= "Are you sure you want to shut down the server?")
+    if answer:
+        if server_started == False:
+            server_tk.destroy()
+            sys.exit(0)
+        else:
+            server_chat_list.insert(END, "The server is shutting down.")
+            print("\nThe server is shutting down.")
+            logFile = open("log.txt", "r")
+            arr = logFile.readlines()
+            logFile.close()
+            for i in range(len(arr)):
+                arraySplitted = arr[i].split("_")
+                arr[i] = arraySplitted
+                if (arr[i][0] == str(serverPortNum)):
+                    removeItem = i
 
-    logFile = open("log.txt", "r")
-    arr = logFile.readlines()
-    logFile.close()
-    for i in range(len(arr)):
-        arraySplitted = arr[i].split("_")
-        arr[i] = arraySplitted
-        if (arr[i][0] == str(serverPortNum)):
-            removeItem = i
+            arr.pop(removeItem)
 
-    arr.pop(removeItem)
-
-    for i in range(len(arr)):
-        arraySplitted = "_".join(arr[i])
-        arr[i] = arraySplitted
-        if (arr[i][0] == str(serverPortNum)):
-            removeItem = i
-
-    with open('log.txt', 'w') as logFile:
-        for line in arr:
-            logFile.write(f"{line}")
-
-    sys.exit(0)
-
-
-
-
+            for i in range(len(arr)):
+                arraySplitted = "_".join(arr[i])
+                arr[i] = arraySplitted
+                if (arr[i][0] == str(serverPortNum)):
+                    removeItem = i
+            with open('log.txt', 'w') as logFile:
+                for line in arr:
+                    logFile.write(f"{line}")
+            server_tk.destroy()
+            sys.exit(0)
+    
 clients = {}
 messages = [] # all the messages will be stored in here
 
 
 
 
+def setup():
+    if serverName == None or serverPortNum == None:
+        print("Error: Either server name or port number was left empty")
+        server_tk.destroy()
+        sys.exit(0)
+    global server_started
+    server_started = True
+    with open("log.txt", "r") as logFile:
+        runningServers = logFile.readlines()
 
-with open("log.txt", "r") as logFile:
-    runningServers = logFile.readlines()
-
-    for i in range(len(runningServers)):
-        arraySplitted = runningServers[i].split("_")
+        for i in range(len(runningServers)):
+            arraySplitted = runningServers[i].split("_")
         
-        runningServers[i] = arraySplitted
+            runningServers[i] = arraySplitted
 
-        if runningServers[i][0].isnumeric():
-                serverNameFromFile = runningServers[i][1].strip('\n')
-                serverPortNumberFromFile = runningServers[i][0]
+            if runningServers[i][0].isnumeric():
+                    serverNameFromFile = runningServers[i][1].strip('\n')
+                    serverPortNumberFromFile = runningServers[i][0]
 
-                if serverName == serverNameFromFile:
-                    print("Error: The server name you have provided in the command argument already exists")
-                    print("Please restart the server using a unique server name.")   
-                    sys.exit(0)
+                    if serverName == serverNameFromFile:
+                        print("Error: The server name you have provided in the command argument already exists")
+                        print("Please restart the server using a unique server name.")   
+                        server_tk.destroy()
+                        sys.exit(0)
 
-                elif serverPortNum == serverPortNumberFromFile:
-                    print("Error: The server port number you have provided in the command argument already exists")
-                    print("Please restart the server using a unique server port number.")   
-                    sys.exit(0)
-
+                    elif serverPortNum == serverPortNumberFromFile:
+                        print("Error: The server port number you have provided in the command argument already exists")
+                        print("Please restart the server using a unique server port number.")   
+                        server_tk.destroy()
+                        sys.exit(0)
     with open("log.txt", "a") as logFile:
         logFile.write(f"{serverPortNum}_{serverName}\n")
+
 
 
 
@@ -89,15 +99,18 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             clientNumber = random.randint(1000,9999) # generate another one
 
         clients[clientNumber] = firstName
-        print("Generating a new client identifier of {} for {}".format(clientNumber, firstName))
+        server_chat_list.insert(END, "Generating a new client identifier of {} for {}\n".format(clientNumber, firstName))
 
         return chat_pb2.ClientIdentifier(client_identifier = clientNumber)
     
     def SendMessage(self, request, context): 
         name = request.first_name
+        id = request.client_identifier
         msg = request.message_text
 
-        print(f"{name}: {msg}")
+        server_chat_list.insert(END, f"{name}: {msg}\n")
+        if (msg == "~LEFT THE CHATROOM~\n"):
+            clients.pop(id)
         messages.append(request)
         
         return chat_pb2.MessageReceived(response = "ok")
@@ -116,9 +129,35 @@ def server():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     chat_pb2_grpc.add_ChatServiceServicer_to_server(ChatService(), server)
     server.add_insecure_port(f'localhost:{serverPortNum}')
-    print(f"gRPC starting through port {serverPortNum}")
+    server_chat_list.insert(END, f"gRPC starting through port {serverPortNum}\n")
     server.start()
-    signal.signal(signal.SIGINT, sigint_handler)
     server.wait_for_termination()
 
-server()
+newThread= threading.Thread(target=server, daemon=True)
+
+def start_server():
+    start_button.configure(state=DISABLED)
+    end_button.configure(state=NORMAL)
+    setup()
+    newThread.start()
+
+
+if __name__ == "__main__":
+    server_tk.geometry("410x360")
+    server_tk.withdraw()
+    serverPortNum = simpledialog.askinteger("Port Number", "Input Port Number For this server:", parent=server_tk)
+    serverName = simpledialog.askstring("Port Name", "Input Servers Name:", parent= server_tk)
+    server_tk.title(f'Chatroom Server {serverName}')
+    server_tk.deiconify()
+    server_tk.protocol("WM_DELETE_WINDOW", exit)
+    frame = Frame (server_tk, width=300, height=300)
+    frame.pack()
+    start_button = Button(frame, text="START", command=start_server)
+    start_button.pack(side= "left")
+
+    end_button = Button(frame, text="END", command=exit, state=DISABLED)
+    end_button.pack(side="right")
+
+    server_chat_list = Text()
+    server_chat_list.pack(side="bottom")
+    server_tk.mainloop()
