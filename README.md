@@ -1,10 +1,9 @@
-# CS4459---Project
-To start the server: enter 2 arguments: python server.py portNumber roomName
-   - portNumber: a random 4 digit number to bind the server to
-   - roomName: a name for the client sessions to identify the server as
+# CS4459 - Final Project
+##A Distributed Application: Multi-User Chat System 
+### Created by: Daniel McGarr and Alex Mihas 
+
+Please install tkinter package before running. Install by typing ```pip3 install tk```
+
+To start a server, run ```python3 server.py``` in the terminal. It will prompt for a integer port number and a name for the server.
    
-To start the client: enter 1 argument: python client.py firstName
-    - firstName: the name for the user
-
-To switch rooms, just type "switch"
-
+To start a client, run ```python client.py``` in the terminal. I will prompt the user for their name. To start exchanging messsages select a server from the drop down list. If the user wishes to switch to a different active server it will be selected by the same method.
