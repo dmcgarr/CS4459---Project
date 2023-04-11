@@ -120,7 +120,7 @@ class Client:
         self.dropdown.configure(values= self.servernames)
 
     # Function takes in a servers name and gets its port number from the 
-    # helper function getServerNumber and sets the GRPC insecure channel
+    # helper function getServerNumber and sets the gRPC insecure channel
     def join(self, selection):
         self.serverPortNumber = getServerNumber(selection)
         self.channel = grpc.insecure_channel(f'localhost:{self.serverPortNumber}')
@@ -137,7 +137,7 @@ class Client:
             # if this is not the first time joining a server inform the current server you are leaving
             if self.connection != None:
                 self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = "~LEFT THE CHATROOM~", server_port_number = self.serverPortNumber))         
-            # set up new GRPC channel
+            # set up new gRPC channel
             self.join(selection)
             self.connection = chat_pb2_grpc.ChatServiceStub(self.channel) 
             # error prevetion to enable text input only when server is connected.
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     # root tkinter window
     root = Tk()
     # Set
-    root.title("GRPC Chat")
+    root.title("gRPC Chat")
     root.maxsize(720,1080)
     main_frame = Frame(root, width = 300, height = 300, padx=5, pady=5)
     main_frame.pack()

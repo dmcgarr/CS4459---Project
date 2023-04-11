@@ -150,7 +150,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 # the reason why this is a "yield" and not "return", because if a client joins a chat when messages have already been sent, the server needs to be able to
                 # send ALL messages that have not been sent yet, and "yield" allows multiple things to be returned
 
-# function that will start the GRPC server.
+# function that will start the gRPC server.
 def server():
     global server
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
