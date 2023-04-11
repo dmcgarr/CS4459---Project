@@ -1,5 +1,5 @@
 # CS4459 - Final Project
-##A Distributed Application: Multi-User Chat System 
+## A Distributed Application: Multi-User Chat System 
 ### Created by: Daniel McGarr and Alex Mihas 
 
 Please install tkinter package before running. Install by typing ```pip3 install tk```
