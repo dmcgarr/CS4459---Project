@@ -56,31 +56,43 @@ class Client:
         self.firstName = name
         self.frame = frame
         root.protocol("WM_DELETE_WINDOW", self.exit)
-        self.exit_button = Button(self.frame, text= "EXIT CHATROOM", command=self.exit)
-        self.exit_button.pack()
 
+        self.selections_frame = Frame(self.frame)
+
+        self.chatbox_frame = Frame(self.frame)
+
+        self.exit_frame = Frame(self.frame)
+
+        self.server_label = Label(self.selections_frame, text="Sever List").pack(side="left")
         self.options=list(getActiveServerSessions().keys())
-        
-        self.dropdown = ttk.Combobox(value=self.options)
+        self.dropdown = ttk.Combobox(self.selections_frame, value=self.options)
         self.dropdown.bind("<<ComboboxSelected>>", self.switch)
         self.dropdown.configure(postcommand=self.get_updated_server_list)
-        self.dropdown.pack()
+        self.dropdown.pack(side="left")
+
         self.chat_screen = Text(self.frame)
         self.chat_screen.tag_configure("left", justify=LEFT)
         self.chat_screen.tag_configure("right", justify=RIGHT)
         self.chat_screen.pack(side="top")
-        self.username_label = Label(self.frame, text=self.firstName)
-        self.username_label.pack(side="left")
-        self.input_field = Entry(self.frame, bd=5, width=10, state=DISABLED)
+
+        
+        self.input_field = Entry(self.chatbox_frame, bd=5, width=50, state=DISABLED)
         self.input_field.bind('<Return>', self.send_message)
         self.input_field.focus()
         self.input_field.pack(side="left")
-        # move this into client setup
+        self.send_button = Button(self.chatbox_frame, text="SEND", command=self.send_message, state=DISABLED)
+        self.send_button.bind("<Button-1>", self.send_message)
+        self.send_button.pack(side="left")
+        self.exit_button = Button(self.exit_frame, text= "EXIT CHATROOM", command=self.exit, bg="red")
+        self.exit_button.pack(side="bottom")
 
         self.chat_screen.insert(END, f"Welcome {self.firstName}!\n")
 
         self.chat_screen.insert(END, "Chat application has started. Please select a server from the dropdown menu.\n")
-        main_frame.mainloop()
+        self.selections_frame.pack(side="top")
+        self.chatbox_frame.pack(side="top")
+        self.exit_frame.pack(side="right")
+        self.frame.mainloop()
     
     def get_updated_server_list(self):
         self.servernames = list(getActiveServerSessions().keys())
@@ -92,14 +104,15 @@ class Client:
 
     def switch(self, event):
         selection = self.dropdown.get()
-        self.join(selection)
-        answer = messagebox.askyesno(title="Change Server Confirmation", message= f"Are you sure you want to join the server {selection}\"?")
+        answer = messagebox.askyesno(title="Change Server Confirmation", message= f"Are you sure you want to join the server {selection}?")
         if answer:
             if self.connection != None:
                 self.connection.SendMessage(chat_pb2.MessageFormat(first_name = self.firstName, client_identifier = self.clientID, message_text = "~LEFT THE CHATROOM~"))
+            self.join(selection)
             self.connection = chat_pb2_grpc.ChatServiceStub(self.channel) 
             # error prevetion to enable text input only when server is connected.
             self.input_field.configure(state=NORMAL)
+            self.send_button.configure(state=NORMAL)
             # generating a unique 4 digit client ID (just in case two or more people have the same name)
             self.clientID = self.connection.GetClientIdentifier(chat_pb2.ClientName(first_name = self.firstName)).client_identifier
             self.chat_screen.delete(1.0, END)
@@ -145,7 +158,8 @@ class Client:
 if __name__ == "__main__":
     root = Tk()
     root.title("GRPC Chat")
-    main_frame = Frame(root, width = 300, height = 300)
+    root.maxsize(720,1080)
+    main_frame = Frame(root, width = 300, height = 300, padx=5, pady=5)
     main_frame.pack()
     root.withdraw() #hide main frame while taking input
     name = simpledialog.askstring("Registration", "Please enter your name:", parent=root)

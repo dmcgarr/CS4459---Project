@@ -16,13 +16,14 @@ serverPortNum = ""
 serverName = ""
 server_started = False
 server_tk = Tk()
+server = None
 
 def exit():
     answer = messagebox.askyesno(title="Exit Confirmation", message= "Are you sure you want to shut down the server?")
     if answer:
         if server_started == False:
             server_tk.destroy()
-            sys.exit(0)
+            sys.exit()
         else:
             server_chat_list.insert(END, "The server is shutting down.")
             print("\nThe server is shutting down.")
@@ -46,6 +47,7 @@ def exit():
                 for line in arr:
                     logFile.write(f"{line}")
             server_tk.destroy()
+            server.stop(None)
             sys.exit(0)
     
 clients = {}
@@ -125,6 +127,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 yield n
 
 def server():
+    global server
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     chat_pb2_grpc.add_ChatServiceServicer_to_server(ChatService(), server)
     server.add_insecure_port(f'localhost:{serverPortNum}')
