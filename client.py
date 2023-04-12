@@ -12,7 +12,7 @@ from tkinter import ttk
 
 
 
-# this method returns a dictionary of all the servers that are currently running
+# This method returns a dictionary of all the servers that are currently running
 # (key = server name, value = port number)
 def getActiveServerSessions():
     servers = {}
@@ -21,7 +21,7 @@ def getActiveServerSessions():
     runningServers = logFile.readlines()
     logFile.close()
 
-    # pasrse through the lines and split on the delimeter
+    # Pasrse through the lines and split on the delimiter
     for i in range(len(runningServers)): #f or each line in the log file
         lineSplitted = runningServers[i].split("_")
         runningServers[i] = lineSplitted
@@ -37,12 +37,12 @@ def getActiveServerSessions():
     return servers
 
 
-# this method returns True if the server name provided exists
+# This method returns True if the server name provided exists
 def check (serverName):
     runningServers = getActiveServerSessions()
     return serverName in runningServers
 
-# this method returns a port number for a given server name
+# This method returns a port number for a given server name
 def getServerNumber (serverName):
     runningServers = getActiveServerSessions()
 
@@ -53,7 +53,7 @@ def getServerNumber (serverName):
                     # so theoretically, this return statement never be reached as we will always verify whether the server name exists
                     # but for proper error handling and testing, it is good to include this
 
-# client class for setting up Client GUI and handling messages
+# Client class for setting up Client GUI and handling messages
 class Client:
     # set up GUI and start client
     def __init__(self, name, frame):
@@ -113,7 +113,7 @@ class Client:
         self.exit_frame.pack()
         self.frame.mainloop()
     
-    # function returns nothing and it will give the class a list of active 
+    # Function returns nothing and it will give the class a list of active 
     # server names and update the dropdown
     def get_updated_server_list(self):
         self.servernames = list(getActiveServerSessions().keys())
@@ -140,7 +140,7 @@ class Client:
             # set up new gRPC channel
             self.join(selection)
             self.connection = chat_pb2_grpc.ChatServiceStub(self.channel) 
-            # error prevetion to enable text input only when server is connected.
+            # error prevention to enable text input only when server is connected.
             self.input_field.configure(state=NORMAL)
             self.send_button.configure(state=NORMAL)
             # generating a unique 4 digit client ID (just in case two or more people have the same name)

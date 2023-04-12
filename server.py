@@ -61,7 +61,7 @@ messages = [] # all the messages will be stored in here
 
 
 # This function appends the server's port and name to a file for storage.
-# If the server name or port number was not inputted it will print an error
+# If the server's name or port number was not inputted it will print an error
 # message and exit the program
 def setup():
     if serverName == None or serverPortNum == None:
@@ -101,7 +101,7 @@ def setup():
 # are currently in the server.
 class ChatService(chat_pb2_grpc.ChatServiceServicer):
     
-    # this function will receive the join message from the client and assign
+    # This function will receive the join message from the client and assign
     # it a unique identifier and return it to the client
     def GetClientIdentifier(self, request, context):
         firstName = request.first_name
@@ -160,7 +160,7 @@ def server():
     server.start()
     server.wait_for_termination()
 
-# since the GUI is threaded the start server function will need to be threaded
+# Since the GUI is threaded the start server function will need to be threaded
 # as well to run concurrently.
 newThread= threading.Thread(target=server, daemon=True)
 
