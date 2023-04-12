@@ -173,7 +173,8 @@ class Client:
         for message in self.connection.GetMessage(chat_pb2.Empty()):  
             name = message.first_name
             msg = message.message_text
-            if message.client_identifier != self.clientID and message.server_port_number == self.serverPortNumber: # this is to avoid printing a message that a client just sent on their own session
+             # this is to avoid printing a message that a client just sent on their own session
+            if message.client_identifier != self.clientID and message.server_port_number == self.serverPortNumber:
                 self.chat_screen.insert(END, f"{name}: {msg}\n", "left")
     
     # called when either the exit chatroom button is selected or the X button 
